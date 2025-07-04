@@ -1,0 +1,164 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cámaras de Seguridad - Casilda</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: #F5F5F5;
+            color: #333;
+        }
+
+        header {
+            background-color: #2E7D32;
+            padding: 15px 0;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        header img.logo {
+            max-width: 280px; /* Ajustado a 280px según tu preferencia */
+            height: auto;
+        }
+
+        header h1 {
+            color: #FFFFFF;
+            font-size: 24px;
+            margin-top: 10px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+
+        .camera-buttons {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .camera-buttons button {
+            background-color: #FFCA28;
+            color: #333;
+            border: none;
+            padding: 12px 25px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .camera-buttons button:hover {
+            background-color: #FFB300;
+        }
+
+        .logout {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .logout a {
+            color: #2E7D32;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .logout a:hover {
+            text-decoration: underline;
+        }
+
+        #video-player {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            display: block;
+            border: 2px solid #2E7D32;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <img src="public/logo-casilda.png" alt="Logo Casilda" class="logo">
+        <h1>Monitoreo de Cámaras - Casilda</h1>
+    </header>
+
+    <div class="container">
+        <div class="camera-buttons">
+            <button onclick="showCamera('camara1')">Cámara 1</button>
+            <button onclick="showCamera('camara2')">Cámara 2</button>
+            <button onclick="showCamera('camara3')">Cámara 3</button>
+            <button onclick="showCamera('camara4')">Cámara 4</button>
+
+        </div>
+
+        <div class="logout">
+            <a href="/logout">Cerrar Sesión</a>
+        </div>
+
+        <video id="video-player" controls autoplay></video>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script>
+        let currentHls = null;
+
+        function showCamera(cameraId) {
+            const video = document.getElementById('video-player');
+            
+            if (currentHls) {
+                currentHls.destroy();
+                currentHls = null;
+                video.src = '';
+            }
+
+            const streamUrl = `/hls/${cameraId}.m3u8?nocache=${new Date().getTime()}`;
+            if (Hls.isSupported()) {
+                currentHls = new Hls({
+                    maxBufferLength: 60,
+                    maxMaxBufferLength: 120,
+                    liveSyncDurationCount: 5,
+                    liveMaxLatencyDurationCount: 10,
+                    enableWorker: true,
+                    backBufferLength: 0,
+                    abrEwmaFastLive: 3,
+                    abrEwmaSlowLive: 9,
+                    liveDurationInfinity: true,
+                    autoStartLoad: true
+                });
+                currentHls.loadSource(streamUrl);
+                currentHls.attachMedia(video);
+                currentHls.on(Hls.Events.ERROR, function (event, data) {
+                    console.error('HLS Error:', data);
+                    if (data.fatal) {
+                        currentHls.startLoad();
+                    }
+                });
+
+                document.addEventListener('visibilitychange', () => {
+                    if (!document.hidden && currentHls) {
+                        currentHls.startLoad();
+                        video.play().catch(err => console.log('Error al reanudar video:', err));
+                    }
+                });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = streamUrl;
+            } else {
+                alert('Tu navegador no soporta HLS.');
+            }
+        }
+    </script>
+</body>
+</html>

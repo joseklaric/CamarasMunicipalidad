@@ -1,0 +1,79 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cámaras de Seguridad</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background: #f0f0f0; }
+        .camera-buttons { margin: 20px; }
+        button { padding: 10px 20px; margin: 5px; background: #007BFF; color: white; border: none; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        #video-player { width: 80%; max-width: 800px; margin: 0 auto; }
+    </style>
+</head>
+<body>
+    <h1>Monitoreo de Cámaras</h1>
+    <div class="camera-buttons">
+        <button onclick="showCamera('camara1')">Cámara 1</button>
+        <button onclick="showCamera('camara2')">Cámara 2</button>
+        <button onclick="showCamera('camara3')">Cámara 3</button>
+        <button onclick="showCamera('camara4')">Cámara 4</button>
+    </div>
+    <div><a href="/logout">Cerrar Sesión</a></div>
+    <video id="video-player" controls autoplay></video>
+
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script>
+        let currentHls = null;
+
+        function showCamera(cameraId) {
+            const video = document.getElementById('video-player');
+            
+            // Detener y destruir la instancia anterior de HLS, si existe
+            if (currentHls) {
+                currentHls.destroy();
+                currentHls = null;
+                video.src = '';
+            }
+
+            const streamUrl = `/hls/${cameraId}.m3u8?nocache=${new Date().getTime()}`;
+            if (Hls.isSupported()) {
+                currentHls = new Hls({
+                    maxBufferLength: 60, // Aumentar buffer a 60 segundos
+                    maxMaxBufferLength: 120, // Máximo buffer a 120 segundos
+                    liveSyncDurationCount: 5,
+                    liveMaxLatencyDurationCount: 10,
+                    enableWorker: true,
+                    backBufferLength: 0,
+                    abrEwmaFastLive: 3,
+                    abrEwmaSlowLive: 9,
+                    liveDurationInfinity: true, // Tratar el stream como infinito
+                    autoStartLoad: true // Forzar carga automática
+                });
+                currentHls.loadSource(streamUrl);
+                currentHls.attachMedia(video);
+                currentHls.on(Hls.Events.ERROR, function (event, data) {
+                    console.error('HLS Error:', data);
+                    if (data.fatal) {
+                        currentHls.startLoad();
+                    }
+                });
+
+                // Detectar cambios de visibilidad de la pestaña
+                document.addEventListener('visibilitychange', () => {
+                    if (!document.hidden && currentHls) {
+                        // Si la pestaña vuelve a estar visible, forzar la carga
+                        currentHls.startLoad();
+                        video.play().catch(err => console.log('Error al reanudar video:', err));
+                    }
+                });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = streamUrl;
+            } else {
+                alert('Tu navegador no soporta HLS.');
+            }
+        }
+    </script>
+</body>
+</html>
