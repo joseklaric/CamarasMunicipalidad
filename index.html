@@ -25,7 +25,7 @@
         }
 
         header img.logo {
-            max-width: 280px; /* Ajustado a 280px según tu preferencia */
+            max-width: 280px;
             height: auto;
         }
 
@@ -79,13 +79,147 @@
             text-decoration: underline;
         }
 
-        #video-player {
+        #video-player-container {
+            position: relative;
             width: 100%;
             max-width: 800px;
             margin: 0 auto;
-            display: block;
             border: 2px solid #2E7D32;
             border-radius: 5px;
+            overflow: hidden;
+            aspect-ratio: 16 / 9;
+            background-color: #000;
+        }
+
+        #video-player {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Estilos del zócalo inferior */
+        #info-bar-bottom {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: #FFFFFF;
+            padding: 0.4vw 1vw; 
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            z-index: 10;
+            font-size: clamp(0.7em, 0.9vw, 1.2em); 
+        }
+
+        #info-bar-bottom .info-left,
+        #info-bar-bottom .info-right {
+            display: flex;
+            align-items: center;
+            white-space: nowrap; 
+            flex-shrink: 0; 
+        }
+        
+        /* Estilos del zócalo superior derecho para la hora */
+        #info-bar-top-right {
+            position: absolute;
+            top: 0.4vw; 
+            right: 0.4vw; 
+            background-color: rgba(0, 0, 0, 0.7);
+            color: #FFFFFF;
+            padding: 0.1vw 0.3vw; 
+            border-radius: 3px;
+            font-weight: bold;
+            z-index: 10;
+            white-space: nowrap; 
+            font-size: clamp(0.8em, 1.1vw, 1.5em); 
+        }
+
+        /* Estilo para el punto rojo */
+        .live-dot {
+            height: clamp(5px, 0.6vw, 8px); 
+            width: clamp(5px, 0.6vw, 8px);
+            background-color: #FF0000; 
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: clamp(2px, 0.3vw, 5px); 
+            animation: pulse 1.5s infinite; 
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(255, 0, 0, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 0, 0, 0);
+            }
+        }
+
+        /* Media Queries para ajustes finos en pantallas muy pequeñas o muy grandes */
+        @media (max-width: 600px) {
+            #info-bar-bottom {
+                font-size: 0.6em; 
+                padding: 1vw 1.2vw; 
+            }
+            #info-bar-top-right {
+                font-size: 0.9em; 
+                padding: 0.7vw 1.2vw;
+                top: 1.2vw; 
+                right: 1.2vw;
+            }
+            .live-dot {
+                height: 7px; 
+                width: 7px;
+                margin-right: 3px;
+            }
+            /* Ajuste para el logo en móviles */
+            #logo-overlay-top-left {
+                top: 1.2vw;
+                left: 1.2vw;
+            }
+            #logo-overlay-top-left img {
+                max-height: 16px; 
+                max-width: 48px;
+            }
+        }
+
+        @media (min-width: 1200px) {
+            #info-bar-bottom {
+                font-size: 1em; 
+            }
+            #info-bar-top-right {
+                font-size: 1em; 
+            }
+            /* Ajuste para el logo en pantallas grandes */
+            #logo-overlay-top-left img {
+                max-height: 40px; 
+                max-width: 120px;
+            }
+        }
+
+        /* --- CSS para el logo superior izquierdo (ajustado en tamaño y opacidad) --- */
+        #logo-overlay-top-left {
+            position: absolute;
+            top: 0.4vw; 
+            left: 0.4vw; 
+            z-index: 10; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #logo-overlay-top-left img {
+            max-height: clamp(20px, 4.8vw, 48px); 
+            max-width: clamp(60px, 14.4vw, 144px); 
+            height: auto; 
+            width: auto;
+            object-fit: contain; 
+            opacity: 0.7; /* Opacidad del 70% */
         }
     </style>
 </head>
@@ -101,14 +235,29 @@
             <button onclick="showCamera('camara2')">Cámara 2</button>
             <button onclick="showCamera('camara3')">Cámara 3</button>
             <button onclick="showCamera('camara4')">Cámara 4</button>
-
         </div>
 
         <div class="logout">
             <a href="/logout">Cerrar Sesión</a>
         </div>
 
-        <video id="video-player" controls autoplay></video>
+        <div id="video-player-container">
+            <video id="video-player" controls autoplay></video>
+            
+            <div id="info-bar-top-right">
+                <span id="current-time-top"></span>
+            </div>
+
+            <div id="logo-overlay-top-left">
+                <img src="public/LOGO_ICONO.png" alt="Logo Icono Casilda">
+            </div>
+
+            <div id="info-bar-bottom">
+                <span class="info-left">Municipalidad de Casilda - Centro de Monitoreo</span>
+                <span class="info-right"><span class="live-dot"></span>EN VIVO</span>
+            </div>
+        </div>
+
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
@@ -159,6 +308,26 @@
                 alert('Tu navegador no soporta HLS.');
             }
         }
+
+        // --- Funciones para los zócalos ---
+
+        function updateTime() {
+            const now = new Date();
+            // Formato HH:MM:SS
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const timeString = `${hours}:${minutes}:${seconds}`;
+            
+            // Actualiza el span de la hora superior
+            document.getElementById('current-time-top').textContent = timeString;
+        }
+
+        // Llama a updateTime cada segundo para mantener la hora actualizada
+        setInterval(updateTime, 1000);
+
+        // Llama a updateTime inmediatamente al cargar la página para mostrar la hora
+        updateTime(); 
     </script>
 </body>
 </html>

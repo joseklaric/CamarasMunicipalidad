@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoreo de Camaras - Casilda (Rotativo)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: #F5F5F5;
+            color: #333;
+        }
+
+        header {
+            background-color: #2E7D32;
+            padding: 15px 0;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        header img.logo {
+            max-width: 280px;
+            height: auto;
+        }
+
+        header h1 {
+            color: #FFFFFF;
+            font-size: 24px;
+            margin-top: 10px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+
+        #video-player-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            border: 2px solid #2E7D32;
+            border-radius: 5px;
+            overflow: hidden;
+            aspect-ratio: 16 / 9;
+            background-color: #000;
+        }
+
+        #video-player {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Estilos del zócalo inferior */
+        #info-bar-bottom {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: #FFFFFF;
+            padding: 0.1vw 0.2vw;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            z-index: 10;
+            font-size: clamp(0.7em, 0.9vw, 1.2em);
+        }
+
+        #info-bar-bottom .info-left,
+        #info-bar-bottom .info-right {
+            display: flex;
+            align-items: center;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        
+        /* Estilos del zócalo superior derecho para la hora */
+        #info-bar-top-right {
+            position: absolute;
+            top: 0.4vw;
+            right: 0.4vw;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: #FFFFFF;
+            padding: 0.1vw 0.3vw;
+            border-radius: 3px;
+            font-weight: bold;
+            z-index: 10;
+            white-space: nowrap;
+            font-size: clamp(0.8em, 1.1vw, 1.5em);
+        }
+
+        /* Estilo para el punto rojo */
+        .live-dot {
+            height: clamp(5px, 0.6vw, 8px);
+            width: clamp(5px, 0.6vw, 8px);
+            background-color: #FF0000;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: clamp(2px, 0.3vw, 5px);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(255, 0, 0, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 0, 0, 0);
+            }
+        }
+
+        /* Media Queries para ajustes finos en pantallas muy pequeñas o muy grandes */
+        @media (max-width: 600px) {
+            #info-bar-bottom {
+                font-size: 0.6em;
+                padding: 1vw 1.2vw;
+            }
+            #info-bar-top-right {
+                font-size: 0.9em;
+                padding: 0.7vw 1.2vw;
+                top: 1.2vw;
+                right: 1.2vw;
+            }
+            .live-dot {
+                height: 7px;
+                width: 7px;
+                margin-right: 3px;
+            }
+            /* Ajuste para el logo en móviles */
+            #logo-overlay-top-left {
+                top: 1.2vw;
+                left: 1.2vw;
+            }
+            #logo-overlay-top-left img {
+                max-height: 16px;
+                max-width: 48px;
+            }
+        }
+
+        @media (min-width: 1200px) {
+            #info-bar-bottom {
+                font-size: 1em;
+            }
+            #info-bar-top-right {
+                font-size: 1em;
+            }
+            /* Ajuste para el logo en pantallas grandes */
+            #logo-overlay-top-left img {
+                max-height: 40px;
+                max-width: 120px;
+            }
+        }
+
+        /* CSS para el logo superior izquierdo (ajustado en tamaño y opacidad) */
+        #logo-overlay-top-left {
+            position: absolute;
+            top: 0.4vw;
+            left: 0.4vw;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #logo-overlay-top-left img {
+            max-height: clamp(20px, 4.8vw, 48px);
+            max-width: clamp(60px, 14.4vw, 144px);
+            height: auto;
+            width: auto;
+            object-fit: contain;
+            opacity: 0.7;
+        }
+
+        /* Estilos para el botón de pantalla completa personalizado (ajustado para estar dentro de info-bar-bottom) */
+        #fullscreen-btn-overlay {
+            /* No position: absolute; aquí, ya que fluirá con el texto */
+            background-color: transparent; /* Fondo transparente por defecto */
+            border-radius: 3px; /* Bordes ligeramente redondeados */
+            padding: 2px; /* Pequeño padding interno */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-left: 10px; /* Espacio a la izquierda del texto "EN VIVO" */
+            flex-shrink: 0; /* Evita que se encoja */
+            height: 100%; /* Ocupa la altura de la barra */
+        }
+
+        #fullscreen-btn-overlay:hover {
+            background-color: rgba(255, 255, 255, 0.2); /* Un ligero fondo al pasar el ratón */
+        }
+
+        #fullscreen-btn-overlay svg {
+            fill: #FFFFFF; /* Color del icono */
+            height: clamp(18px, 1.8vw, 24px); /* Ajusta el tamaño del icono */
+            width: clamp(18px, 1.8vw, 24px);
+        }
+
+        /* Opcional: Ajuste del margen del texto EN VIVO si el botón parece demasiado pegado */
+        #info-bar-bottom .info-right span:first-child {
+            margin-right: clamp(2px, 0.3vw, 5px); /* Mantener el margen del punto si es necesario */
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <img src="public/logo-casilda.png" alt="Logo Casilda" class="logo">
+        <h1>Monitoreo de Camaras - Casilda</h1>
+    </header>
+
+    <div class="container">
+        <div id="video-player-container">
+            <video id="video-player" autoplay muted playsinline></video>
+            
+            <div id="info-bar-top-right">
+                <span id="current-time-top"></span>
+            </div>
+
+            <div id="logo-overlay-top-left">
+                <img src="public/LOGO_ICONO.png" alt="Logo Icono Casilda">
+            </div>
+
+            <div id="info-bar-bottom">
+                <span class="info-left">Municipalidad de Casilda - Centro de Monitoreo</span>
+                <span class="info-right">
+                    <span class="live-dot"></span>EN VIVO
+                    <div id="fullscreen-btn-overlay" onclick="toggleFullscreen()">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                        </svg>
+                    </div>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script>
+        let currentHls = null;
+        let rotationIntervalId; // Para poder limpiar el intervalo si es necesario
+
+        // --- Configuración para la rotación automática de cámaras ---
+        const cameraList = ['camara1', 'camara2', 'camara3', 'camara4'];
+        let currentCameraIndex = 0;
+        // Tiempo en milisegundos para cambiar de cámara (30 segundos por defecto)
+        const rotationIntervalTime = 30 * 1000;
+
+        function showCamera(cameraId) {
+            const video = document.getElementById('video-player');
+            
+            if (currentHls) {
+                currentHls.destroy();
+                currentHls = null;
+                video.src = '';
+            }
+
+            const streamUrl = `/hls/${cameraId}.m3u8?nocache=${new Date().getTime()}`;
+            if (Hls.isSupported()) {
+                currentHls = new Hls({
+                    maxBufferLength: 60,
+                    maxMaxBufferLength: 120,
+                    liveSyncDurationCount: 5,
+                    liveMaxLatencyDurationCount: 10,
+                    enableWorker: true,
+                    backBufferLength: 0,
+                    abrEwmaFastLive: 3,
+                    abrEwmaSlowLive: 9,
+                    liveDurationInfinity: true,
+                    autoStartLoad: true
+                });
+                currentHls.loadSource(streamUrl);
+                currentHls.attachMedia(video);
+                currentHls.on(Hls.Events.ERROR, function (event, data) {
+                    console.error('HLS Error:', data);
+                    if (data.fatal) {
+                        currentHls.startLoad();
+                    }
+                });
+
+                // Intenta reproducir el video tan pronto como esté listo
+                currentHls.on(Hls.Events.MEDIA_ATTACHED, function () {
+                    video.muted = true; // Forzar mute para permitir autoplay en navegadores estrictos
+                    video.play().catch(err => {
+                        console.log('Error de autoplay o reproducción:', err);
+                    });
+                });
+
+                document.addEventListener('visibilitychange', () => {
+                    if (!document.hidden && currentHls) {
+                        video.muted = true; // Asegurarse de que esté muteado al volver a la pestaña
+                        currentHls.startLoad();
+                        video.play().catch(err => console.log('Error al reanudar video por visibilitychange:', err));
+                    }
+                });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = streamUrl;
+                video.muted = true; // Forzar mute
+                video.play().catch(err => console.log('Error al reproducir MpegURL:', err));
+            } else {
+                alert('Tu navegador no soporta HLS.');
+            }
+        }
+
+        // --- Funciones para los zócalos ---
+
+        function updateTime() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const timeString = `${hours}:${minutes}:${seconds}`;
+            
+            document.getElementById('current-time-top').textContent = timeString;
+        }
+
+        // Llama a updateTime cada segundo para mantener la hora actualizada
+        setInterval(updateTime, 1000);
+
+        // Llama a updateTime inmediatamente al cargar la página para mostrar la hora
+        updateTime();
+
+        // --- Lógica de rotación de cámaras ---
+        function rotateCamera() {
+            const nextCameraId = cameraList[currentCameraIndex];
+            console.log(`Cambiando a cámara: ${nextCameraId}`);
+            showCamera(nextCameraId);
+
+            currentCameraIndex++;
+            if (currentCameraIndex >= cameraList.length) {
+                currentCameraIndex = 0;
+            }
+        }
+
+        // Inicia la primera cámara al cargar la página
+        rotateCamera();
+
+        // Configura el intervalo para la rotación automática
+        rotationIntervalId = setInterval(rotateCamera, rotationIntervalTime);
+
+        // Opcional: Pausar la rotación si la pestaña no está activa
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                clearInterval(rotationIntervalId);
+            } else {
+                // Reanudar rotación y la cámara actual cuando la pestaña vuelve a ser visible
+                rotationIntervalId = setInterval(rotateCamera, rotationIntervalTime);
+                const video = document.getElementById('video-player');
+                if (video && video.paused) {
+                    video.muted = true;
+                    video.play().catch(err => console.log('Error al reanudar video por visibilitychange (tab activa):', err));
+                }
+            }
+        });
+
+        // --- Lógica de pantalla completa ---
+        function toggleFullscreen() {
+            const videoContainer = document.getElementById('video-player-container');
+            if (!document.fullscreenElement) {
+                if (videoContainer.requestFullscreen) {
+                    videoContainer.requestFullscreen();
+                } else if (videoContainer.mozRequestFullScreen) { /* Firefox */
+                    videoContainer.mozRequestFullScreen();
+                } else if (videoContainer.webkitRequestFullscreen) { /* Chrome, Safari and Opera */
+                    videoContainer.webkitRequestFullscreen();
+                } else if (videoContainer.msRequestFullscreen) { /* IE/Edge */
+                    videoContainer.msRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.mozCancelFullScreen) { /* Firefox */
+                    document.mozCancelFullScreen();
+                } else if (document.webkitExitFullscreen) { /* Chrome, Safari and Opera */
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) { /* IE/Edge */
+                    document.msExitFullscreen();
+                }
+            }
+        }
+    </script>
+</body>
+</html>

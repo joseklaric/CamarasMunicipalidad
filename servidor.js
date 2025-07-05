@@ -1,4 +1,4 @@
-require('dotenv').config({ path: 'c:\\camaras\\.env' }); // Carga las variables de entorno desde el archivo .env en c:\camaras
+﻿require('dotenv').config({ path: 'c:\\camaras\\.env' }); // Carga las variables de entorno desde el archivo .env en c:\camaras
 console.log('Credenciales de login cargadas:', process.env.LOGIN_USERNAME, process.env.LOGIN_PASSWORD);
 console.log('Credenciales de cámaras cargadas:', process.env.CAMERA_USERNAME, process.env.CAMERA_PASSWORD);
 const express = require('express');
@@ -363,9 +363,10 @@ app.use(isAuthenticated);
 app.use(express.static('c:\\camaras'));
 
 // Usa variables de entorno para las URLs de las cámaras
+// 'camara2': `rtsp://${process.env.CAMERA_USERNAME || 'radio'}:${process.env.CAMERA_PASSWORD || 'Conectar123456'}@192.168.10.66:554/live1s1.sdp`,
 const cameras = {
     'camara1': `rtsp://${process.env.CAMERA_USERNAME || 'radio'}:${process.env.CAMERA_PASSWORD || 'Conectar123456'}@192.168.10.18:1025/live.sdp`,
-    'camara2': `rtsp://${process.env.CAMERA_USERNAME || 'radio'}:${process.env.CAMERA_PASSWORD || 'Conectar123456'}@192.168.10.69:554/live.sdp`,
+    'camara2': `rtsp://${process.env.CAMERA_USERNAME || 'radio'}:${process.env.CAMERA_PASSWORD || 'Conectar123456'}@192.168.10.69:554`,
     'camara3': `rtsp://${process.env.CAMERA_USERNAME || 'radio'}:${process.env.CAMERA_PASSWORD || 'Conectar123456'}@192.168.10.72:554`,
     'camara4': `rtsp://${process.env.CAMERA_USERNAME || 'radio'}:${process.env.CAMERA_PASSWORD || 'Conectar123456'}@192.168.10.76:554`,
     
